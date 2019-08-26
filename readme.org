@@ -3,10 +3,10 @@ a collection of nemo configurations
 * Installation
 in the nemo folder (where the makenemo script is):
 
-```
+#+BEGIN_SRC bash
 git clone https://github.com/bderembl/nemo_configs.git
 cd tests
-```
+#+END_SRC
 
 pick the configuration you want (here gyre_noxios)
 
