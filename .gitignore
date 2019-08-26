@@ -1,0 +1,10 @@
+BLD
+WORK
+nemo
+*.dat
+*.nc
+communication_report.txt
+date.file
+ocean.output
+output.namelist.dyn
+time.step

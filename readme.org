@@ -1,1 +1,21 @@
 a collection of nemo configurations
+
+* Installation
+in the nemo folder (where the makenemo script is):
+
+```
+git clone https://github.com/bderembl/nemo_configs.git
+cd tests
+```
+
+pick the configuration you want (here gyre_noxios)
+
+```
+ln -s ../nemo_configs/GYRE_noxios .
+cd GYRE_noxios/scripts
+python mygendata.py
+../../../makenemo -a GYRE_noxios -m linux_gfortran -j 4
+cd ../EXP00
+./nemo
+```
+
