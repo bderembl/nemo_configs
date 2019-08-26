@@ -17,6 +17,7 @@ MODULE usrdef_sbc
    USE sbc_oce         ! Surface boundary condition: ocean fields
    USE sbc_ice         ! Surface boundary condition: ice fields
    USE phycst          ! physical constants
+   USE usrdef_nam, ONLY: rn_Lx   ! domain size
    !
    USE in_out_manager  ! I/O manager
    USE lib_mpp         ! distribued memory computing library
@@ -54,6 +55,7 @@ CONTAINS
       !!
       !!----------------------------------------------------------------------
       INTEGER, INTENT(in) ::   kt   ! ocean time step
+
       INTEGER  ::   ji, jj   ! dummy loop indices
       !!---------------------------------------------------------------------
       !
@@ -72,9 +74,10 @@ CONTAINS
          qns (:,:) = 0._wp
          qsr (:,:) = 0._wp
          !         
+
       DO jj = 1, jpj
          DO ji = 1, jpi   
-            utau(ji,jj) = -1._wp*sin(2*3.14159*jj/jpj)
+            utau(ji,jj) = -1._wp*sin(2*3.14159*gphiu(ji,jj)/(rn_Lx*1e-3))
          END DO
       END DO
 
