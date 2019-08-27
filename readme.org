@@ -11,10 +11,12 @@ cd tests
 pick the configuration you want (here gyre_noxios)
 
 #+BEGIN_SRC bash
-ln -s ../nemo_configs/GYRE_noxios .
-cd GYRE_noxios/scripts
+cfg_name=GYRE_noxios
+more ../nemo_configs/$cfg_name/cfg_type.txt >> work_cfgs.txt
+ln -s ../nemo_configs/$cfg_name .
+cd $cfg_name/scripts
 python mygendata.py
-../../../makenemo -a GYRE_noxios -m linux_gfortran -j 4
+../../../makenemo -a $cfg_name -m linux_gfortran -j 4
 cd ../EXP00
 ./nemo
 #+END_SRC
