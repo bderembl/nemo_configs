@@ -101,8 +101,8 @@ CONTAINS
       kff = 1                       !  indicate not to compute Coriolis parameter afterward
       !
 
-      fnot = 5.e-5
-      beta = 1.5e-11
+      fnot = 3.e-5
+      beta = 2e-11
 
       DO jj = 1, jpj
          DO ji = 1, jpi             ! longitude

@@ -88,6 +88,17 @@
    sn_ucur     = 'istate'   ,         0        ,'vozocrtx',   .false.   , .true. , 'yearly' ,  ''              ,  'Ume'   , ''
    sn_vcur     = 'istate'   ,         0        ,'vomecrty',   .false.   , .true. , 'yearly' ,  ''              ,  'Vme'   , ''
 /
+!-----------------------------------------------------------------------
+&namsbc_ssh    !   data : ssh *** warning*** this namelist is not in namelist_ref so all variables must be present here.
+!-----------------------------------------------------------------------
+   ln_ssh_init = .true.         !  ocean initialisation
+   ln_ssh_dmp  = .false.         !  ssh restoring (??)
+   cn_dir      = './'      !  root directory for the ssh data location
+   !___________!____________!___________________!___________!_____________!________!___________!__________________!__________!_______________!
+   !           !  file name ! frequency (hours) ! variable  ! time interp.!  clim  ! 'yearly'/ ! weights filename ! rotation ! land/sea mask !
+   !           !            !  (if <0  months)  !   name    !   (logical) !  (T/F) ! 'monthly' !                  ! pairing  !    filename   !
+   sn_ssh = 'istate',                   0       , 'sossheig',  .false.    , .true. , 'yearly'  ,    ''            ,    ''    ,    ''
+/
 !!======================================================================
 !!            ***  Surface Boundary Condition namelists  ***          !!
 !!                                                                    !!

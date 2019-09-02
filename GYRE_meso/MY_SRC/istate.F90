@@ -26,6 +26,7 @@ MODULE istate
    USE divhor         ! horizontal divergence            (div_hor routine)
    USE dtatsd         ! data temperature and salinity   (dta_tsd routine)
    USE dtauvd         ! data: U & V current             (dta_uvd routine)
+   USE sbcssh         ! data: ssh
    USE domvvl          ! varying vertical mesh
    USE iscplrst        ! ice sheet coupling
    USE wet_dry         ! wetting and drying (needed for wad_istate)
@@ -71,6 +72,8 @@ CONTAINS
                      CALL dta_tsd_init        ! Initialisation of T & S input data
 !!gm to be moved in usrdef of C1D case
                      CALL dta_uvd_init        ! Initialization of U & V input data
+!
+                     CALL sbc_ssh_init        ! Initialization of ssh input data
 !!gm
 
       rhd  (:,:,:  ) = 0._wp   ;   rhop (:,:,:  ) = 0._wp      ! set one for all to 0 at level jpk
@@ -140,6 +143,11 @@ CONTAINS
            ub(:,:,:) = zuvd(:,:,:,1) ;  un(:,:,:) = ub(:,:,:)
            vb(:,:,:) = zuvd(:,:,:,2) ;  vn(:,:,:) = vb(:,:,:)
            DEALLOCATE( zuvd )
+        ENDIF
+
+        IF ( ln_ssh_init) THEN ! read ssh at nit000
+           CALL sbc_ssh( nit000, sshb )
+            sshn(:,:) = sshb(:,:)
         ENDIF
          !
 !!gm This is to be changed !!!!
