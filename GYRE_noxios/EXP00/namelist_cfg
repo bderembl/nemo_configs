@@ -19,9 +19,9 @@
 !-----------------------------------------------------------------------
 &namusr_def    !   LOCK_EXCHANGE user defined namelist
 !-----------------------------------------------------------------------
-   rn_dx       =    50000.   ! horizontal resolution in meters
+   rn_dx       =    78125.   ! horizontal resolution in meters
    rn_Lx       =    5000000.   ! size of the box
-   nn_nz       =    21   ! number of vertical layers
+   nn_nz       =    24   ! number of vertical layers
 /
 !
 !-----------------------------------------------------------------------
@@ -32,7 +32,7 @@
    nn_it000    =       1   !  first time step
    nn_itend    =   200000   ! for 17h of simulation  (=61200 time-step)
    nn_istate   =       0   !  output the initial state (1) or not (0)
-   nn_stock    =   50000   !  frequency of creation of a restart file (modulo referenced to 1)
+   nn_stock    =   500000   !  frequency of creation of a restart file (modulo referenced to 1)
    nn_write    =   360   !  frequency of write in the output file   (modulo referenced to nn_it000)
 /
 !-----------------------------------------------------------------------
@@ -163,7 +163,7 @@
    ln_traldf_iso   =  .true.  !  bilaplacian operator
    nn_aht_ijk_t    = 0         !  = 0   constant = 1/2  Ud*Ld   (lap case)
       rn_Ud        = 2.0           !  lateral diffusive velocity [m/s]
-      rn_Ld        = 100.e+3        !  lateral diffusive length   [m] 
+      rn_Ld        = 20.e+3        !  lateral diffusive length   [m] 
 /
 !!======================================================================
 !!                      ***  Dynamics namelists  ***                  !!
@@ -216,7 +216,7 @@
      !                        !  time invariant coefficients :  ahm = 1/2  Uv*Lv   (lap case) 
      !                             !                            bhm = 1/12 Uv*Lv^3 (blp case)
      rn_Uv      = 2.0            !  lateral viscous velocity [m/s] (nn_ahm_ijk_t= 0, 10, 20, 30)
-     rn_Lv      = 100.e3             !  lateral viscous length   [m]   (nn_ahm_ijk_t= 0, 10)
+     rn_Lv      = 20.e3             !  lateral viscous length   [m]   (nn_ahm_ijk_t= 0, 10)
 /
 !!======================================================================
 !!                     vertical physics namelists                     !!
@@ -295,7 +295,7 @@
 &namsbc_ssr    !   surface boundary condition : sea surface restoring   (ln_ssr =T)
 !-----------------------------------------------------------------------
    nn_sstr     =     1     !  add a retroaction term to the surface heat flux (=1) or not (=0)
-      rn_dqdt     = -40.      !  magnitude of the retroaction on temperature   [W/m2/K]
+      rn_dqdt     = -30.      !  magnitude of the retroaction on temperature   [W/m2/K]
    nn_sssr     =     0     !  add a damping term to the surface freshwater flux (=2)
       !                    !  or to SSS only (=1) or no damping term (=0)
       rn_deds     =  -166.67  !  magnitude of the damping on salinity   [mm/day]

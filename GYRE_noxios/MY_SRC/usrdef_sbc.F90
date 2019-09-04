@@ -77,7 +77,8 @@ CONTAINS
 
       DO jj = 1, jpj
          DO ji = 1, jpi   
-            utau(ji,jj) = -1._wp*sin(2*3.14159*gphiu(ji,jj)/(rn_Lx*1e-3))
+           utau(ji,jj) = -2._wp*(gphiu(ji,jj) + 0.3*(rn_Lx*1e-3))/(rn_Lx*1e-3)& 
+              * sin(2*3.14159*gphiu(ji,jj)/(rn_Lx*1e-3))
          END DO
       END DO
 

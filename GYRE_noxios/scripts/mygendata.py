@@ -10,8 +10,8 @@ file_s = "surface_var.nc"
 
 ######## GRID PARAMETERS
 
-si_y = 102
-si_x = 102
+si_y = 64 + 2
+si_x = 64 + 2
 
 si_x1 = si_x + 1
 si_y1 = si_y + 1
@@ -38,7 +38,7 @@ xc,yc = np.meshgrid(xx1,yy1)
 dx1 = dx*np.ones((si_x))
 dy1 = dy*np.ones((si_y))
 
-dz1 = np.array([10,20,30,40,50,60,70,80,90,100,150,200,250,300,350,400,500,500,500,500,500])
+dz1 = np.array([10,20,30,40,50,60,70,80,90,100,120,140,160,180,200,250,300,350,400,450,500,500, 500, 400])
 np.savetxt(dir0 + 'dz.dat',dz1)
 
 ####### forcing and initial conditions
