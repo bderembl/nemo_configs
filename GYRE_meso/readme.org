@@ -1,1 +1,7 @@
 large scale run with 3d restoring
+
+compile without xios:
+~makenemo -a GYRE_meso -m linux_gfortran -j 4~
+
+compile with xios
+~makenemo -a GYRE_meso -m linux_gfortran -j 4 add_key "key_iomput"~
