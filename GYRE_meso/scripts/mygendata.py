@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import scipy.io.netcdf as netcdf
 import glob
 import spoisson 
+import def_radius
 from scipy import interpolate
 
 dir0 = "../EXP00/"
@@ -49,6 +50,11 @@ dy1 = dy*np.ones((si_y))
 dz1 = Lz/si_z*np.ones(si_z)
 np.savetxt(dir0 + 'dz.dat',dz1)
 
+dz_fi2 = dz1/2.0
+dz2 = np.array([dz_fi2[i] + dz_fi2[i+1] for i in range(len(dz_fi2)-1)])
+dz2 = np.reshape(dz2[0:si_z-1],(si_z-1,1,1))
+
+
 # initial conditions
 #-------------------
 
@@ -56,12 +62,13 @@ np.savetxt(dir0 + 'dz.dat',dz1)
 L = 5000e3  # m
 H = 5000    # m
 beta = 2.0e-11 # 1/m/s
+alphaT = 2e-4 # K^-1
+gg = 9.80665 # nemo value
 N2 = 1e-6  #  (1/s**2)
 Bs = N2*H
-Thetas = Bs/10/2e-4 # 1/g alpha
+Thetas = Bs/gg/alphaT # 1/g alpha
 Us = N2*H**2/(beta*L**2)
 fnot = 3e-5
-gg = 9.80665 # nemo value
 
 dir_data = "data/"
 
@@ -87,7 +94,7 @@ yyo = Ly*(np.arange(0,N) + 0.5)/(1.0*N)
 xx1o = Lx*(np.arange(0,N+1) )/(1.0*N)
 yy1o = Ly*(np.arange(0,N+1) )/(1.0*N)
 
-xg,yg = np.meshgrid(xxo,yyo) 
+xgo,ygo = np.meshgrid(xxo,yyo) 
 xco,yco = np.meshgrid(xx1o,yy1o) 
 
 b = np.fromfile(allfilesb[-1],'f4').reshape(nl2,N1,N1).transpose(0,2,1)
@@ -125,11 +132,12 @@ b = Thetas*(b[1:-1,1:,1:] - b.min()) + 2.0
 u = Us*uv[2:-2:2,1:,1:]
 v = Us*uv[3:-2:2,1:,1:]
 
-ff = fnot + beta*yco[:-1,:-1] # should be at u and v points
+ff_o = fnot + beta*yco[:-1,:-1] # should be at u and v points
+ff = fnot + beta*yg 
 
 # compute pressure for SSH
-dudy = np.diff(ff[np.newaxis,:,:]*u,1,1)/dy
-dvdx = np.diff(ff[np.newaxis,:,:]*v,1,2)/dx
+dudy = np.diff(ff_o[np.newaxis,:,:]*u,1,1)/dy
+dvdx = np.diff(ff_o[np.newaxis,:,:]*v,1,2)/dx
 
 vort = dvdx[0,:-1,:] - dudy[0,:,:-1]
 
@@ -204,11 +212,32 @@ f.close()
 # create netcdf file (restoring)
 #-------------------------------
 
-tau_dmp = 3600  # restoring time scale
+# restoring length scale
+N2 = -gg*alphaT*np.diff(theta_n,axis=0)/dz2
+N2_min = 1e-7
+N2 = np.where(N2<N2_min, N2_min, N2)
+
+gp = N2*dz2
+lmax = 500e3
+filt_len = np.zeros((si_y,si_x))
+for nx in range(0,si_x):
+  for ny in range(0,si_y):
+    rd = def_radius.cal_rad(dz1,gp[:,ny,nx],ff[ny,nx])
+    filt_len[ny,nx] = np.min([10*rd[1],lmax])
+
+# relaxation near the boundaries
+def shape(x,sigma):
+  return (1-np.exp(-x**2/(2*sigma**2)))
+
+dist = 500e3
+filt_bdy = lmax*shape(xg,dist)*shape(xg-Lx,dist)*shape(yg,dist)*shape(yg-Lx,dist)
+filt_len = np.where(filt_len<filt_bdy, filt_len, filt_bdy)
+
+# restoring time scale
+tau_dmp = 3600
 
 fileout = dir0 + file_r
 f = netcdf.netcdf_file(fileout,'w')
-
 
 f.createDimension('z',si_z)
 f.createDimension('y',si_y)
@@ -219,12 +248,14 @@ ypo = f.createVariable('y', 'd', ('y',))
 xpo = f.createVariable('x', 'd', ('x',))
 
 ro  = f.createVariable('resto' , 'd', ('z','y','x',))
+ftlen_o  = f.createVariable('filter_len' , 'd', ('y','x',))
 
 zpo[:] = np.arange(si_z)
 ypo[:] = np.arange(si_y)
 xpo[:] = np.arange(si_x)
 
 ro[:,:,:] = 1/tau_dmp
+ftlen_o[:,:] = filt_len
 
 f.close()
 

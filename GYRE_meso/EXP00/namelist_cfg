@@ -30,10 +30,10 @@
    nn_no       =       0   !  job number (no more used...)
    cn_exp      =   "GYRE"  !  experience name
    nn_it000    =       1   !  first time step
-   nn_itend    =   400   ! for 17h of simulation  (=61200 time-step)
+   nn_itend    =   10   ! for 17h of simulation  (=61200 time-step)
    nn_istate   =       1   !  output the initial state (1) or not (0)
    nn_stock    =   50000   !  frequency of creation of a restart file (modulo referenced to 1)
-   nn_write    =   100   !  frequency of write in the output file   (modulo referenced to nn_it000)
+   nn_write    =   1   !  frequency of write in the output file   (modulo referenced to nn_it000)
 /
 !-----------------------------------------------------------------------
 &namcfg        !   parameters of the configuration
@@ -72,8 +72,7 @@
 &namtra_dmp    !   tracer: T & S newtonian damping                      (default: OFF)
 !-----------------------------------------------------------------------
    ln_tradmp   =  .true.  !  add a damping term (using resto.nc coef.)
-   ln_filter   =  .false.  !  filter
-   rn_len_cut = 300.e3  ! filter length scale in m
+   ln_filter   =  .true.  !  filter
       nn_zdmp  =    0         !  vertical shape =0    damping throughout the water column
       !                       !                 =1 no damping in the mixing layer (kz  criteria)
       !                       !                 =2 no damping in the mixed  layer (rho crieria)

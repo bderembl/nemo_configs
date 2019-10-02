@@ -50,9 +50,11 @@ MODULE tradmp
    LOGICAL            , PUBLIC ::   ln_filter   !: filter flag
    INTEGER            , PUBLIC ::   nn_zdmp     !: = 0/1/2 flag for damping in the mixed layer
    CHARACTER(LEN=200) , PUBLIC ::   cn_resto    !: name of netcdf file containing restoration coefficient field
-   REAL(wp)           , PUBLIC :: rn_len_cut  ! length scale for cutoff
+   INTEGER , PUBLIC :: kiter_max
    !
    REAL(wp), PUBLIC, ALLOCATABLE, SAVE, DIMENSION(:,:,:) ::   resto    !: restoring coeff. on T and S (s-1)
+   REAL(wp), PUBLIC, ALLOCATABLE, SAVE, DIMENSION(:,:) ::  filter_len    !: filtering length scale
+   INTEGER, PUBLIC, ALLOCATABLE, SAVE, DIMENSION(:,:) ::  filter_iter    !: filtering length scale
 
    !! * Substitutions
 #  include "vectopt_loop_substitute.h90"
@@ -71,11 +73,16 @@ CONTAINS
       !
       CALL mpp_sum ( 'tradmp', tra_dmp_alloc )
       IF( tra_dmp_alloc > 0 )   CALL ctl_warn('tra_dmp_alloc: allocation of arrays failed')
+
+      ! BD: TODO: add flag for errors
+      ALLOCATE( filter_len(jpi,jpj) )
+      ALLOCATE( filter_iter(jpi,jpj) )
+
       !
    END FUNCTION tra_dmp_alloc
 
 
-   SUBROUTINE gaussian_filter(ptabin, len_cut, ptabout) !GIG
+   SUBROUTINE gaussian_filter(ptabin, ptabout) !GIG
      !!----------------------------------------------------------------------
      !!                  ***  routine Gaussian Filter  ***
      !!
@@ -87,14 +94,13 @@ CONTAINS
      !! ** Action  :   ptabout filtered output from ptabin
      !!
      !!----------------------------------------------------------------------
-     REAL(wp),                  INTENT(IN)  :: len_cut  ! length cutoff
      REAL(wp), DIMENSION(:,:), INTENT(IN)  :: ptabin     ! input array
      REAL(wp), DIMENSION(:,:), INTENT(OUT) :: ptabout    ! output array
 
      ! * Local variable
      INTEGER                               :: ji, jj, jn ! dummy loop index
-     INTEGER                               :: kiter      ! iterations
      REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zvarout    ! working array
+     REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zvarout2    ! working array
      REAL(wp)                              :: znum       ! numerator
      REAL(wp)                              :: z1_9       ! 1/9
      REAL(wp)                              :: dx         ! dx spacing
@@ -102,24 +108,26 @@ CONTAINS
      !------------------------------------------------------------------------------
      !
      ! assume uniform grid
-     dx = e1t(1,1)
+     ! dx = e1t(1,1)
      ! sigma^2 = n(w^2 - 1)/12
      ! -> n = 12*sigma^2/(w^2 - 1)
      ! length_scale = 3*sigma
 
-     kiter = floor(12.0*(len_cut/3/dx)**2/9.0)
+     ! kiter = floor(12.0*(len_cut/3/dx)**2/9.0)
 
      IF( ln_timing )  CALL timing_start('Gaussian Filter')
      !
      z1_9 = 1._wp/9._wp
 
      ALLOCATE( zvarout(jpi,jpj) )
+     ALLOCATE( zvarout2(jpi,jpj) )
 
      ptabout(:,:) = ptabin(:,:)
      zvarout(:,:) = ptabout(:,:) 
+     zvarout2(:,:) = ptabout(:,:) 
 
      ! BD: adjust level for tmask ? bug
-     DO jn = 1,kiter
+     DO jn = 1,kiter_max
        DO jj = 2,jpjm1
          DO ji = 2,jpim1
            znum = zvarout(ji,jj  )
@@ -137,15 +145,27 @@ CONTAINS
               + tmask(ji,jj    ,1) + tmask(ji,jj+1  ,1) &
               + tmask(ji+1,jj-1,1) + tmask(ji+1,jj  ,1) &
               + tmask(ji+1,jj+1,1))
-           ptabout(ji,jj)=znum*tmask(ji,jj,1) + ptabin(ji,jj)*(1.-tmask(ji,jj,1))
+             ptabout(ji,jj)=znum*tmask(ji,jj,1) + ptabin(ji,jj)*(1.-tmask(ji,jj,1))
          ENDDO  ! end loop jj
        ENDDO  ! end loop ji
        !
        CALL lbc_lnk('gaussian_filter', ptabout, 'T', 1.) ! Boundary condition
        zvarout(:,:) = ptabout(:,:)
+
+       DO jj = 2,jpjm1
+         DO ji = 2,jpim1
+           if (jn == filter_iter(ji,jj)) then
+             zvarout2(ji,jj) = zvarout(ji,jj)
+           ENDIF
+         ENDDO
+       ENDDO
      ENDDO  ! end loop jn
 
+     ptabout(:,:) = zvarout2(:,:)
+     CALL lbc_lnk('gaussian_filter', ptabout, 'T', 1.) ! Boundary condition
+
      DEALLOCATE( zvarout )
+     DEALLOCATE( zvarout2 )
      IF( ln_timing )  CALL timing_stop('Gaussian Filter')
      !
    END SUBROUTINE gaussian_filter
@@ -191,7 +211,7 @@ CONTAINS
       IF( ln_filter )   THEN   
          DO jn = 1, jpts
            DO jk = 1, jpkm1
-             CALL gaussian_filter(tsb(:,:,jk,jn), rn_len_cut, tsb_flt(:,:,jk,jn))
+             CALL gaussian_filter(tsb(:,:,jk,jn), tsb_flt(:,:,jk,jn))
            ENDDO
          ENDDO
       ENDIF
@@ -269,15 +289,16 @@ CONTAINS
       !!
       !! ** Method  :   read the namtra_dmp namelist and check the parameters
       !!----------------------------------------------------------------------
-      INTEGER ::   ios, imask   ! local integers 
+      INTEGER ::   ji,jj, ios, imask   ! local integers 
       !
-      NAMELIST/namtra_dmp/ ln_tradmp, ln_filter, nn_zdmp, cn_resto, rn_len_cut
+      REAL(wp), ALLOCATABLE, DIMENSION(:,:) ::  filter_iter_real
+      !
+      NAMELIST/namtra_dmp/ ln_tradmp, ln_filter, nn_zdmp, cn_resto
       !!----------------------------------------------------------------------
       !
-
+      ALLOCATE( filter_iter_real(jpi,jpj) )
       ! temporary
       ln_filter = .FALSE.
-      rn_len_cut = 0.
 
       REWIND( numnam_ref )   ! Namelist namtra_dmp in reference namelist : T & S relaxation
       READ  ( numnam_ref, namtra_dmp, IOSTAT = ios, ERR = 901)
@@ -295,7 +316,6 @@ CONTAINS
          WRITE(numout,*) '   Namelist namtra_dmp : set relaxation parameters'
          WRITE(numout,*) '      Apply relaxation   or not       ln_tradmp   = ', ln_tradmp
          WRITE(numout,*) '      relax large scale only          ln_filter   = ', ln_filter
-         WRITE(numout,*) '      megnth scale for filter        rn_len_cut = ', rn_len_cut
          WRITE(numout,*) '         mixed layer damping option      nn_zdmp  = ', nn_zdmp
          WRITE(numout,*) '         Damping file name               cn_resto = ', cn_resto
          WRITE(numout,*)
@@ -325,7 +345,25 @@ CONTAINS
          CALL iom_open ( cn_resto, imask)
          CALL iom_get  ( imask, jpdom_autoglo, 'resto', resto )
          CALL iom_close( imask )
+         !                          ! Read 
+         CALL iom_open ( cn_resto, imask)
+         CALL iom_get  ( imask, jpdom_autoglo, 'filter_len',  filter_len)
+         CALL iom_close( imask )
+         
+         ! construct iteration array from length scale
+         ! assume uniform grid X/Y
+         DO jj = 1, jpj
+           DO ji = 1, jpi
+             filter_iter(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+             filter_iter_real(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+           ENDDO
+         ENDDO
+
+         kiter_max = MAXVAL( filter_iter_real(:,:) )
+         CALL mpp_max( 'tra_dmp_init', kiter_max )                 ! max over the global domain
+
       ENDIF
+      DEALLOCATE(filter_iter_real)
       !
    END SUBROUTINE tra_dmp_init
 
