@@ -1,6 +1,7 @@
 BLD
 WORK
 nemo
+EXP??
 *.dat
 *.nc
 communication_report.txt
