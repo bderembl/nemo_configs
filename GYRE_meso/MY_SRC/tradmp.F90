@@ -48,6 +48,8 @@ MODULE tradmp
    !                                           !!* Namelist namtra_dmp : T & S newtonian damping *
    LOGICAL            , PUBLIC ::   ln_tradmp   !: internal damping flag
    LOGICAL            , PUBLIC ::   ln_filter   !: filter flag
+   LOGICAL            , PUBLIC ::   ln_gaussian_flt   !: gaussian filter
+   LOGICAL            , PUBLIC ::   ln_shapiro_flt   !: shapiro filter
    INTEGER            , PUBLIC ::   nn_zdmp     !: = 0/1/2 flag for damping in the mixed layer
    CHARACTER(LEN=200) , PUBLIC ::   cn_resto    !: name of netcdf file containing restoration coefficient field
    INTEGER , PUBLIC :: kiter_max
@@ -172,6 +174,82 @@ CONTAINS
 
 
 
+   SUBROUTINE shapiro_filter(ptabin, ptabout) !GIG
+     !!----------------------------------------------------------------------
+     !!                  ***  routine Shapiro Filter  ***
+     !!
+     !! ** Purpose :  Multiple application (kiter) of a box filter
+     !!               on ptabin to produce ptabout.
+     !!
+     !! ** Method  :   
+     !!
+     !! ** Action  :   ptabout filtered output from ptabin
+     !!
+     !!----------------------------------------------------------------------
+     REAL(wp), DIMENSION(:,:), INTENT(IN)  :: ptabin     ! input array
+     REAL(wp), DIMENSION(:,:), INTENT(OUT) :: ptabout    ! output array
+
+     ! * Local variable
+     INTEGER                               :: ji, jj, jn ! dummy loop index
+     REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zvarout    ! working array
+     REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zvarout2    ! working array
+     REAL(wp)                              :: znum       ! numerator
+     REAL(wp)                              :: z1_9       ! 1/9
+     REAL(wp)                              :: dx         ! dx spacing
+     REAL(wp)                              :: zalphax    ! weight coeficient (x direction)
+     REAL(wp)                              :: zalphay    ! weight coeficient (y direction)
+     !------------------------------------------------------------------------------
+     !
+     IF( ln_timing )  CALL timing_start('Shapiro Filter')
+     !
+     z1_9 = 1._wp/9._wp
+     zalphax=1./2.
+     zalphay=1./2.
+
+     ALLOCATE( zvarout(jpi,jpj) )
+     ALLOCATE( zvarout2(jpi,jpj) )
+
+     ptabout(:,:) = ptabin(:,:)
+     zvarout(:,:) = ptabout(:,:) 
+     zvarout2(:,:) = ptabout(:,:) 
+
+     ! BD: adjust level for tmask ? bug
+     DO jn = 1,kiter_max
+       DO jj = 2,jpjm1
+         DO ji = 2,jpim1
+           znum = zvarout(ji,jj  )
+           znum = zvarout(ji,jj)   &
+              + 0.25*zalphax*(zvarout(ji-1,jj  )-zvarout(ji,jj))*tmask(ji-1,jj  ,1)  &
+              + 0.25*zalphax*(zvarout(ji+1,jj  )-zvarout(ji,jj))*tmask(ji+1,jj  ,1)  &
+              + 0.25*zalphay*(zvarout(ji  ,jj-1)-zvarout(ji,jj))*tmask(ji  ,jj-1,1)  &
+              + 0.25*zalphay*(zvarout(ji  ,jj+1)-zvarout(ji,jj))*tmask(ji  ,jj+1,1)
+           ptabout(ji,jj)=znum*tmask(ji,jj,1) + ptabin(ji,jj)*(1.-tmask(ji,jj,1))
+         ENDDO  ! end loop jj
+       ENDDO  ! end loop ji
+       !
+       CALL lbc_lnk('shapiro_filter', ptabout, 'T', 1.) ! Boundary condition
+       zvarout(:,:) = ptabout(:,:)
+
+       DO jj = 2,jpjm1
+         DO ji = 2,jpim1
+           if (jn == filter_iter(ji,jj)) then
+             zvarout2(ji,jj) = zvarout(ji,jj)
+           ENDIF
+         ENDDO
+       ENDDO
+     ENDDO  ! end loop jn
+
+     ptabout(:,:) = zvarout2(:,:)
+     CALL lbc_lnk('shapiro_filter', ptabout, 'T', 1.) ! Boundary condition
+
+     DEALLOCATE( zvarout )
+     DEALLOCATE( zvarout2 )
+     IF( ln_timing )  CALL timing_stop('Shapiro Filter')
+     !
+   END SUBROUTINE shapiro_filter
+
+
+
    SUBROUTINE tra_dmp( kt )
       !!----------------------------------------------------------------------
       !!                   ***  ROUTINE tra_dmp  ***
@@ -209,14 +287,13 @@ CONTAINS
       tsb_flt(:,:,:,:) = tsb(:,:,:,:) 
 
       IF( ln_filter )   THEN   
-         DO jn = 1, jpts
-           DO jk = 1, jpkm1
-             CALL gaussian_filter(tsb(:,:,jk,jn), tsb_flt(:,:,jk,jn))
-           ENDDO
-         ENDDO
+        DO jn = 1, jpts
+          DO jk = 1, jpkm1
+            IF (ln_gaussian_flt) CALL gaussian_filter(tsb(:,:,jk,jn), tsb_flt(:,:,jk,jn))
+            IF (ln_shapiro_flt) CALL shapiro_filter(tsb(:,:,jk,jn), tsb_flt(:,:,jk,jn))
+          ENDDO
+        ENDDO
       ENDIF
-
-
       !                           !==  input T-S data at kt  ==!
       CALL dta_tsd( kt, zts_dta )            ! read and interpolates T-S data at kt
       !
@@ -289,7 +366,7 @@ CONTAINS
       !!
       !! ** Method  :   read the namtra_dmp namelist and check the parameters
       !!----------------------------------------------------------------------
-      INTEGER ::   ji,jj, ios, imask   ! local integers 
+      INTEGER ::   ji,jj, ioptio, ios, imask   ! local integers 
       !
       REAL(wp), ALLOCATABLE, DIMENSION(:,:) ::  filter_iter_real
       !
@@ -299,6 +376,8 @@ CONTAINS
       ALLOCATE( filter_iter_real(jpi,jpj) )
       ! temporary
       ln_filter = .FALSE.
+      ln_gaussian_flt = .FALSE.
+      ln_shapiro_flt = .FALSE.
 
       REWIND( numnam_ref )   ! Namelist namtra_dmp in reference namelist : T & S relaxation
       READ  ( numnam_ref, namtra_dmp, IOSTAT = ios, ERR = 901)
@@ -318,6 +397,8 @@ CONTAINS
          WRITE(numout,*) '      relax large scale only          ln_filter   = ', ln_filter
          WRITE(numout,*) '         mixed layer damping option      nn_zdmp  = ', nn_zdmp
          WRITE(numout,*) '         Damping file name               cn_resto = ', cn_resto
+         WRITE(numout,*) '      Gaussian filter       ln_gaussian   = ', ln_gaussian_flt
+         WRITE(numout,*) '      shapiro filter       ln_shapiro   = ', ln_shapiro_flt
          WRITE(numout,*)
       ENDIF
       !
@@ -346,18 +427,37 @@ CONTAINS
          CALL iom_get  ( imask, jpdom_autoglo, 'resto', resto )
          CALL iom_close( imask )
          !                          ! Read 
-         CALL iom_open ( cn_resto, imask)
-         CALL iom_get  ( imask, jpdom_autoglo, 'filter_len',  filter_len)
-         CALL iom_close( imask )
-         
+         ioptio = 0
+         if (ln_filter) then
+           if (ln_gaussian_flt) ioptio = ioptio + 1
+           if (ln_shapiro_flt)  ioptio = ioptio + 1
+           IF( ioptio /= 1 )    CALL ctl_stop( 'tra_dmp_init: one and only one filter type has to be defined ' )
+         endif
+
+         if (ln_filter) then
+           CALL iom_open ( cn_resto, imask)
+           CALL iom_get  ( imask, jpdom_autoglo, 'filter_len',  filter_len)
+           CALL iom_close( imask )
+         endif
+
          ! construct iteration array from length scale
          ! assume uniform grid X/Y
-         DO jj = 1, jpj
-           DO ji = 1, jpi
-             filter_iter(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
-             filter_iter_real(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+         if (ln_gaussian_flt) then
+           DO jj = 1, jpj
+             DO ji = 1, jpi
+               filter_iter(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+               filter_iter_real(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+             ENDDO
            ENDDO
-         ENDDO
+         else if(ln_shapiro_flt) then
+           DO jj = 1, jpj
+             DO ji = 1, jpi
+               ! BD: BUG: update this for shapiro filter
+               filter_iter(ji,jj) = floor(50.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+               filter_iter_real(ji,jj) = floor(50.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+             ENDDO
+           ENDDO
+         endif
 
          kiter_max = MAXVAL( filter_iter_real(:,:) )
          CALL mpp_max( 'tra_dmp_init', kiter_max )                 ! max over the global domain

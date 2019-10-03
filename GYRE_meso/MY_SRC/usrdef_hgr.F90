@@ -15,7 +15,7 @@ MODULE usrdef_hgr
    USE dom_oce  ,  ONLY: nimpp, njmpp       ! ocean space and time domain
    USE par_oce         ! ocean space and time domain
    USE phycst          ! physical constants
-   USE usrdef_nam, ONLY: rn_dx   ! horizontal resolution in meters
+   USE usrdef_nam, ONLY: rn_Lx, nn_nx   ! needed to get horizontal resolution
    !
    USE in_out_manager  ! I/O manager
    USE lib_mpp         ! MPP library
@@ -44,7 +44,6 @@ CONTAINS
       !! ** Purpose :   user defined mesh and Coriolis parameter
       !!
       !! ** Method  :   set all intent(out) argument to a proper value
-      !!                LOCK_EXCHANGE configuration : uniform grid spacing (rn_dx)
       !!                without Coriolis force (f=0)
       !!
       !! ** Action  : - define longitude & latitude of t-, u-, v- and f-points (in degrees) 
@@ -62,7 +61,7 @@ CONTAINS
       REAL(wp), DIMENSION(:,:), INTENT(out) ::   pe1e2u, pe1e2v               ! u- & v-surfaces (if reduction in strait)   [m2]
       !
       INTEGER  ::   ji, jj   ! dummy loop indices
-      REAL(wp) ::   zfact,fnot, beta      ! local scalars
+      REAL(wp) ::   rn_dx, zfact,fnot, beta      ! local scalars
       !!-------------------------------------------------------------------------------
       !
       IF(lwp) WRITE(numout,*)
@@ -70,6 +69,7 @@ CONTAINS
       IF(lwp) WRITE(numout,*) '~~~~~~~~~~~   uniform grid spacing WITHOUT Coriolis force (f=0)'
       !
       !                       !==  grid point position  ==!   (in kilometers)
+      rn_dx = rn_Lx/nn_nx
       zfact = rn_dx * 1.e-3         ! conversion in km
       DO jj = 1, jpj
          DO ji = 1, jpi             ! longitude

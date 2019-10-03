@@ -17,9 +17,9 @@
 !!======================================================================
 !
 !-----------------------------------------------------------------------
-&namusr_def    !   LOCK_EXCHANGE user defined namelist
+&namusr_def    !   GYRE_meso user defined namelist
 !-----------------------------------------------------------------------
-   rn_dx       =    40000.0   ! horizontal resolution in meters
+   nn_nx       =    125       ! nb of oceanic grid points (without bdys)
    rn_Lx       =    5000000.  ! size of the box
    nn_nz       =    30        ! number of vertical layers
 /
@@ -30,10 +30,10 @@
    nn_no       =       0   !  job number (no more used...)
    cn_exp      =   "GYRE"  !  experience name
    nn_it000    =       1   !  first time step
-   nn_itend    =   10   ! for 17h of simulation  (=61200 time-step)
+   nn_itend    =   300   ! for 17h of simulation  (=61200 time-step)
    nn_istate   =       1   !  output the initial state (1) or not (0)
    nn_stock    =   50000   !  frequency of creation of a restart file (modulo referenced to 1)
-   nn_write    =   1   !  frequency of write in the output file   (modulo referenced to nn_it000)
+   nn_write    =   10   !  frequency of write in the output file   (modulo referenced to nn_it000)
 /
 !-----------------------------------------------------------------------
 &namcfg        !   parameters of the configuration
@@ -73,6 +73,7 @@
 !-----------------------------------------------------------------------
    ln_tradmp   =  .true.  !  add a damping term (using resto.nc coef.)
    ln_filter   =  .true.  !  filter
+   ln_shaprio_flt = .true.
       nn_zdmp  =    0         !  vertical shape =0    damping throughout the water column
       !                       !                 =1 no damping in the mixing layer (kz  criteria)
       !                       !                 =2 no damping in the mixed  layer (rho crieria)
@@ -288,12 +289,12 @@
 &namzdf        !   vertical physics                                     (default: NO selection)
 !-----------------------------------------------------------------------
 
-   ln_zdftke   = .true.       !  Turbulent Kinetic Energy closure       (T =>   fill namzdf_tke) 
+   ln_zdfcst   = .true.       !  Turbulent Kinetic Energy closure       (T =>   fill namzdf_tke) 
    ln_zdfevd   = .true.       !  enhanced vertical diffusion         
    nn_evdm     =    1         ! apply on tracer (=0) or on tracer and momentum (=1) 
       rn_evd      =  100.        ! mixing coefficient [m2/s] 
    !                       ! coefficients     
-   rn_avm0     =   1.2e-4     !  vertical eddy viscosity   [m2/s]       (background Kz if ln_zdfcst=F)   
+   rn_avm0     =   1.2e-5     !  vertical eddy viscosity   [m2/s]       (background Kz if ln_zdfcst=F)   
    rn_avt0     =   1.2e-5     !  vertical eddy diffusivity [m2/s]       (background Kz if ln_zdfcst=F)
    nn_avb      =    0         !  profile for background avt & avm (=1) or not (=0) 
    nn_havtb    =    0         !  horizontal shape for avtb (=1) or not (=0)

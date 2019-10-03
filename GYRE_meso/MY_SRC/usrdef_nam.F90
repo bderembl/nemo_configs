@@ -27,9 +27,9 @@ MODULE usrdef_nam
    PUBLIC   usr_def_nam   ! called by nemogcm.F90
 
    !                              !!* namusr_def namelist *!!
-   REAL(wp), PUBLIC ::   rn_dx     ! resolution in meters defining the horizontal domain size
    REAL(wp), PUBLIC ::   rn_Lx     ! size of the domain
    INTEGER,  PUBLIC ::   nn_nz     ! nb of grid point in the vertical
+   INTEGER,  PUBLIC ::   nn_nx     ! nb of grid point in the horizontal
 
    !!----------------------------------------------------------------------
    !! NEMO/OCE 4.0 , NEMO Consortium (2018)
@@ -58,7 +58,7 @@ CONTAINS
       !
       INTEGER ::   ios, ii   ! Local integer
       !!
-      NAMELIST/namusr_def/ rn_dx, rn_Lx, nn_nz
+      NAMELIST/namusr_def/ rn_Lx, nn_nz, nn_nx
       !!----------------------------------------------------------------------
       !
       ii = 1
@@ -70,20 +70,20 @@ CONTAINS
       WRITE( ldnam(:), namusr_def )
       !
       !
-      cd_cfg = 'LOCK_EXCHANGE'      ! name & resolution (not used)
-      kk_cfg = INT( rn_dx )
+      cd_cfg = 'GYRE_meso'      ! name & resolution (not used)
       !
       ! Global Domain size:  
-      kpi = INT(  rn_Lx / rn_dx ) + 2
-      kpj = INT(  rn_Lx / rn_dx ) + 2
+      kpi = nn_nx + 2 ! wall on each side (herited from lock_exchange)
+      kpj = nn_nx + 2 ! wall on each side
       kpk = nn_nz
+      !
+      kk_cfg = INT(rn_Lx/nn_nx)
       !
       !                             ! control print
       WRITE(ldtxt(ii),*) '   '                                                                          ;   ii = ii + 1
       WRITE(ldtxt(ii),*) 'usr_def_nam  : read the user defined namelist (namusr_def) in namelist_cfg'   ;   ii = ii + 1
       WRITE(ldtxt(ii),*) '~~~~~~~~~~~ '                                                                 ;   ii = ii + 1
-      WRITE(ldtxt(ii),*) '   Namelist namusr_def : LOCK_EXCHANGE test case'                             ;   ii = ii + 1
-      WRITE(ldtxt(ii),*) '      horizontal resolution                    rn_dx  = ', rn_dx, ' meters'   ;   ii = ii + 1
+      WRITE(ldtxt(ii),*) '   Namelist namusr_def : GYRE_meso test case'                             ;   ii = ii + 1
       WRITE(ldtxt(ii),*) '         resulting global domain size :        jpiglo = ', kpi                ;   ii = ii + 1
       WRITE(ldtxt(ii),*) '                                               jpjglo = ', kpj                ;   ii = ii + 1
       WRITE(ldtxt(ii),*) '                                               jpkglo = ', kpk                ;   ii = ii + 1
