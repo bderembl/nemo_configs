@@ -20,7 +20,7 @@
 &namusr_def    !   GYRE_meso user defined namelist
 !-----------------------------------------------------------------------
    nn_nx       =    125       ! nb of oceanic grid points (without bdys)
-   rn_Lx       =    5000000.  ! size of the box
+   rn_Lx       =    5.e6      ! size of the box
    nn_nz       =    30        ! number of vertical layers
 /
 !
