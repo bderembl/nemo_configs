@@ -73,7 +73,8 @@
 !-----------------------------------------------------------------------
    ln_tradmp   =  .true.  !  add a damping term (using resto.nc coef.)
    ln_filter   =  .true.  !  filter
-   ln_shapiro_flt = .true.
+   ln_gaussian_flt = .true.  ! pick either gaussian or shapiro
+   ln_shapiro_flt = .false.
       nn_zdmp  =    0         !  vertical shape =0    damping throughout the water column
       !                       !                 =1 no damping in the mixing layer (kz  criteria)
       !                       !                 =2 no damping in the mixed  layer (rho crieria)
