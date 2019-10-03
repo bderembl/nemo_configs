@@ -370,7 +370,8 @@ CONTAINS
       !
       REAL(wp), ALLOCATABLE, DIMENSION(:,:) ::  filter_iter_real
       !
-      NAMELIST/namtra_dmp/ ln_tradmp, ln_filter, nn_zdmp, cn_resto
+      NAMELIST/namtra_dmp/ ln_tradmp, ln_filter, ln_gaussian_flt, ln_shapiro_flt,&
+         nn_zdmp, cn_resto
       !!----------------------------------------------------------------------
       !
       ALLOCATE( filter_iter_real(jpi,jpj) )
@@ -453,8 +454,8 @@ CONTAINS
            DO jj = 1, jpj
              DO ji = 1, jpi
                ! BD: BUG: update this for shapiro filter
-               filter_iter(ji,jj) = floor(50.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
-               filter_iter_real(ji,jj) = floor(50.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+               filter_iter(ji,jj) = floor(20.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+               filter_iter_real(ji,jj) = floor(20.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
              ENDDO
            ENDDO
          endif
