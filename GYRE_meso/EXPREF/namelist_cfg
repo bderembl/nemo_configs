@@ -342,6 +342,7 @@
 !-----------------------------------------------------------------------
 &namctl        !   Control prints & Benchmark
 !-----------------------------------------------------------------------
+   ln_diacfl   = .true.   !  CFL diagnostics write out in cfl_diagnostics.ascii
 /
 !-----------------------------------------------------------------------
 &namsto        ! Stochastic parametrization of EOS                      (default: OFF)

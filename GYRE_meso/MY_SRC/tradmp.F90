@@ -448,6 +448,9 @@ CONTAINS
              DO ji = 1, jpi
                filter_iter(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
                filter_iter_real(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
+               ! numerical instability for 1 iteration only
+               if (filter_iter(ji,jj) < 2) filter_iter(ji,jj) = 2
+               if (filter_iter_real(ji,jj) < 2) filter_iter_real(ji,jj) = 2
              ENDDO
            ENDDO
          else if(ln_shapiro_flt) then
