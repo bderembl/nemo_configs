@@ -273,6 +273,7 @@ CONTAINS
       INTEGER ::   ji, jj, jk, jn   ! dummy loop indices
       REAL(wp), DIMENSION(jpi,jpj,jpk,jpts)     ::  zts_dta
       REAL(wp), DIMENSION(:,:,:,:), ALLOCATABLE ::  ztrdts
+      REAL(wp), DIMENSION(:,:,:,:), ALLOCATABLE ::  ztrdts_loc
       REAL(wp), DIMENSION(:,:,:,:), ALLOCATABLE ::  tsb_flt
       !!----------------------------------------------------------------------
       !
@@ -282,6 +283,10 @@ CONTAINS
          ALLOCATE( ztrdts(jpi,jpj,jpk,jpts) ) 
          ztrdts(:,:,:,:) = tsa(:,:,:,:) 
       ENDIF
+
+      ! my local diag
+      ALLOCATE( ztrdts_loc(jpi,jpj,jpk,jpts) ) 
+      ztrdts_loc(:,:,:,:) = tsa(:,:,:,:) 
 
       ALLOCATE( tsb_flt(jpi,jpj,jpk,jpts) ) 
       tsb_flt(:,:,:,:) = tsb(:,:,:,:) 
@@ -346,6 +351,13 @@ CONTAINS
          CALL trd_tra( kt, 'TRA', jp_sal, jptra_dmp, ztrdts(:,:,:,jp_sal) )
          DEALLOCATE( ztrdts ) 
       ENDIF
+
+      ztrdts_loc(:,:,:,:) = tsa(:,:,:,:) - ztrdts_loc(:,:,:,:)
+      CALL iom_put( "ttrd_dmp"  , ztrdts_loc(:,:,:,jp_tem) )
+      tsb_flt(:,:,:,:) = tsb_flt(:,:,:,:)
+      CALL iom_put( "strd_dmp"  , tsb_flt(:,:,:,jp_tem) ) ! put filter sol in strd
+      DEALLOCATE( ztrdts_loc ) 
+
 
       DEALLOCATE(tsb_flt)
 
@@ -449,8 +461,8 @@ CONTAINS
                filter_iter(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
                filter_iter_real(ji,jj) = floor(12.0*(filter_len(ji,jj)/3/e1t(ji,jj))**2/9.0)
                ! numerical instability for 1 iteration only
-               if (filter_iter(ji,jj) < 2) filter_iter(ji,jj) = 2
-               if (filter_iter_real(ji,jj) < 2) filter_iter_real(ji,jj) = 2
+               if (filter_iter(ji,jj) == 1) filter_iter(ji,jj) = 0
+               if (filter_iter_real(ji,jj) == 1) filter_iter_real(ji,jj) = 0
              ENDDO
            ENDDO
          else if(ln_shapiro_flt) then

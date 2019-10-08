@@ -121,6 +121,8 @@ CONTAINS
          ELSE                                 ! user defined initial T and S
             CALL usr_def_istate( gdept_b, tmask, tsb, ub, vb, sshb  )         
          ENDIF
+         !call random_seed()
+         !call random_number(tsb)
          tsn  (:,:,:,:) = tsb (:,:,:,:)       ! set now values from to before ones
          sshn (:,:)     = sshb(:,:)   
          un   (:,:,:)   = ub  (:,:,:)

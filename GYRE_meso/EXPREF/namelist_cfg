@@ -141,7 +141,7 @@
   nn_ice      = 0         !  =0 no ice boundary condition   
   ln_traqsr   = .false.   !  Light penetration in the ocean            (T => fill namtra_qsr )
   ln_rnf      = .false.   !  runoffs                                   (T => fill namsbc_rnf)
-  ln_ssr      = .true.   !  Sea Surface Restoring on T and/or S       (T => fill namsbc_ssr)
+  ln_ssr      = .false.   !  Sea Surface Restoring on T and/or S       (T => fill namsbc_ssr)
   nn_fwb      = 0         !  FreshWater Budget: =0 unchecked
 /
 !!======================================================================
@@ -290,7 +290,7 @@
 &namzdf        !   vertical physics                                     (default: NO selection)
 !-----------------------------------------------------------------------
 
-   ln_zdfcst   = .true.       !  Turbulent Kinetic Energy closure       (T =>   fill namzdf_tke) 
+   ln_zdfcst   = .true.       !  cte diffusion
    ln_zdfevd   = .true.       !  enhanced vertical diffusion         
    nn_evdm     =    1         ! apply on tracer (=0) or on tracer and momentum (=1) 
       rn_evd      =  100.        ! mixing coefficient [m2/s] 

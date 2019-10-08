@@ -223,13 +223,13 @@ filt_len = np.zeros((si_y,si_x))
 for nx in range(0,si_x):
   for ny in range(0,si_y):
     rd = def_radius.cal_rad(dz1,gp[:,ny,nx],ff[ny,nx])
-    filt_len[ny,nx] = np.min([10*rd[1],lmax])
+    filt_len[ny,nx] = np.min([12*rd[1],lmax])
 
 # relaxation near the boundaries
 def shape(x,sigma):
   return (1-np.exp(-x**2/(2*sigma**2)))
 
-dist = 500e3
+dist = 400e3
 filt_bdy = lmax*shape(xg,dist)*shape(xg-Lx,dist)*shape(yg,dist)*shape(yg-Lx,dist)
 filt_len = np.where(filt_len<filt_bdy, filt_len, filt_bdy)
 
